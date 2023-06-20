@@ -15,7 +15,7 @@ cfg = dotenv_values('.env')
 def extract_code(markdown_text):
     if len(markdown_text) == 0: 
         return "Something went wrong with the request."
-    code_regex = r"```(?:html)(.*?)```"
+    code_regex = r"```(?:html)?(.*?)```"
     code_matches = re.findall(code_regex, markdown_text, re.DOTALL)
     if code_matches:
         return code_matches[0]
@@ -50,7 +50,7 @@ def query_code_bison(ctx, temp=0.5, max_tokens=2048):
     for prediction in predictions: 
         if prediction.get("safetyAttributes")['blocked']:
             logging.info("safetyAttributes blocked")
-            return "Something went wrong with content of the request or reply."
+            return "Something went wrong with content of the request or reply. (try refreshing or changing the input)"
         return extract_code(prediction.get("content"))
 
 app = Flask(__name__)
