@@ -21,7 +21,7 @@ def extract_code(markdown_text):
         return code_matches[0]
     else:
         logging.info("Empty list of matches for code_regex.")
-        print('markdown_text: ', markdown_text)
+        logging.info('markdown_text: ', markdown_text)
         return "Something went wrong parsing the reply."
 
 def query_code_bison(ctx, temp=0.5, max_tokens=2048):
