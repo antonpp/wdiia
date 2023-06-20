@@ -1,19 +1,27 @@
 import re
+import os
+import logging
 
 from flask import Flask
+from dotenv import dotenv_values
 
 from google.cloud import aiplatform
 from google.cloud.aiplatform.gapic.schema import predict
 from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
 
+cfg = dotenv_values('.env')
+
 def extract_code(markdown_text):
+    if len(markdown_text) == 0: 
+        return "Something went wrong with the request."
     code_regex = r"```html\s+(.*?)\s+```"
     code_matches = re.findall(code_regex, markdown_text, re.DOTALL)
     if code_matches:
         return code_matches[0]
     else:
-        return "Something went wrong parsing the regex."
+        logging.info("Empty list of matches for code_regex.")
+        return "Something went wrong parsing the reply."
 
 def query_code_bison(ctx, temp=0.5, max_tokens=2048):
     client_options = {"api_endpoint": "us-central1-aiplatform.googleapis.com"}
@@ -32,13 +40,17 @@ def query_code_bison(ctx, temp=0.5, max_tokens=2048):
     }
     parameters = json_format.ParseDict(parameters_dict, Value())
     response = client.predict(
-        endpoint="projects/genai-coding/locations/us-central1/publishers/google/models/code-bison@001", 
+        endpoint=f"projects/{cfg['PROJECT_ID']}/locations/us-central1/publishers/google/models/code-bison@001", 
         instances=instances, 
         parameters=parameters
     )
     predictions = response.predictions
 
-    for prediction in predictions: return extract_code(prediction.get("content", ""))
+    for prediction in predictions: 
+        if prediction.get("safetyAttributes")['blocked']:
+            logging.info("safetyAttributes blocked")
+            return "Something went wrong with content of the request or reply."
+        return extract_code(prediction.get("content"))
 
 app = Flask(__name__)
 
@@ -51,12 +63,8 @@ def generate_landingpage(company_name, product, core_value):
     company_name = company_name.replace('_', ' ')
     product = product.replace('_', ' ')
     core_value = core_value.replace('_', ' ')
-    context = f"""Write a html landing page for a company called {company_name}. 
-{company_name} is a {product} maker. {company_name}'s core value is {core_value}. 
-Use bootstrap css to style the webpage. The page should have a navbar and a footer. 
-The webpage should include a hero banner, pricing plans (in a table), the company mission statement, 
-currently open roles and customer quotes of people using {product} with attention to {core_value}."""
-    print("Context: ", context)
+    context = open('prompts/design_landingpage').read().format(**locals())
+    logging.info('context: ', context)
     return query_code_bison(context, temp=0.8)
 
 if __name__ == '__main__':
