@@ -15,12 +15,13 @@ cfg = dotenv_values('.env')
 def extract_code(markdown_text):
     if len(markdown_text) == 0: 
         return "Something went wrong with the request."
-    code_regex = r"```html\s+(.*?)\s+```"
+    code_regex = r"```(?:html)(.*?)```"
     code_matches = re.findall(code_regex, markdown_text, re.DOTALL)
     if code_matches:
         return code_matches[0]
     else:
         logging.info("Empty list of matches for code_regex.")
+        print('markdown_text: ', markdown_text)
         return "Something went wrong parsing the reply."
 
 def query_code_bison(ctx, temp=0.5, max_tokens=2048):

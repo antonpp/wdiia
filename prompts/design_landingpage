@@ -1,5 +1,12 @@
 Write a html landing page for a company called {company_name}. 
 {company_name} is a {product} maker. {company_name}'s core value is {core_value}. 
-Use bootstrap css to style the webpage. The page should have a navbar and a footer. 
-The webpage should include a hero banner, pricing plans (in a table), the company mission statement, 
-currently open roles and customer quotes of people using {product} with attention to {core_value}.
+Use bootstrap css to style the webpage. 
+
+Below the outline of the page:
+- navbar
+- hero banner
+- pricing plans (in a table)
+- the company mission statement
+- currently open roles
+- customer quotes of them using {product} with attention to {core_value}
+- footer
