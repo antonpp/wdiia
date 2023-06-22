@@ -1,6 +1,6 @@
-import re
-import os
-import logging
+import re, logging
+
+from functools import lru_cache
 
 from flask import Flask
 from dotenv import dotenv_values
@@ -9,6 +9,8 @@ from google.cloud import aiplatform
 from google.cloud.aiplatform.gapic.schema import predict
 from google.protobuf import json_format
 from google.protobuf.struct_pb2 import Value
+
+logging.basicConfig(level=logging.INFO)
 
 cfg = dotenv_values('.env')
 
@@ -22,8 +24,9 @@ def extract_code(markdown_text):
     else:
         logging.info("Empty list of matches for code_regex.")
         logging.info('markdown_text: ', markdown_text)
-        return "Something went wrong parsing the reply."
+        return None
 
+@lru_cache(maxsize=128)
 def query_code_bison(ctx, temp=0.5, max_tokens=2048):
     client_options = {"api_endpoint": "us-central1-aiplatform.googleapis.com"}
 
@@ -50,8 +53,12 @@ def query_code_bison(ctx, temp=0.5, max_tokens=2048):
     for prediction in predictions: 
         if prediction.get("safetyAttributes")['blocked']:
             logging.info("safetyAttributes blocked")
-            return "Something went wrong with content of the request or reply. (try refreshing or changing the input)"
-        return extract_code(prediction.get("content"))
+            raise Exception("Something went wrong with content of the request or reply. (try refreshing or changing the input)")
+
+        res = extract_code(prediction.get("content"))
+        if res == None:
+            raise Exception('Something went wrong parsing the reply')
+        return res
 
 app = Flask(__name__)
 
