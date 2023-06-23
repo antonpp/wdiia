@@ -1,64 +1,55 @@
 import re, logging
+import vertexai
 
 from functools import lru_cache
 
 from flask import Flask
 from dotenv import dotenv_values
+from vertexai.preview.language_models import CodeGenerationModel
 
-from google.cloud import aiplatform
-from google.cloud.aiplatform.gapic.schema import predict
-from google.protobuf import json_format
-from google.protobuf.struct_pb2 import Value
 
 logging.basicConfig(level=logging.INFO)
 
 cfg = dotenv_values('.env')
+vertexai.init(project=cfg['PROJECT_ID'], location="us-central1")
+model = CodeGenerationModel.from_pretrained("code-bison@001")
 
 def extract_code(markdown_text):
+    logging.info("markdown_text: " + markdown_text)
     if len(markdown_text) == 0: 
-        return "Something went wrong with the request."
-    code_regex = r"```(?:html)?(.*?)```"
+        logging.warning("markdown_text is empty.")
+        return None
+    code_regex = r"```(?:html)?(.*)(?:```)?"
     code_matches = re.findall(code_regex, markdown_text, re.DOTALL)
-    if code_matches:
-        return code_matches[0]
-    else:
-        logging.info("Empty list of matches for code_regex.")
+    if len(code_matches) != 1:
+        logging.warning("regex code_matches is not 1.")
         logging.info('markdown_text: ', markdown_text)
         return None
+    else:
+        return code_matches[0]
 
 @lru_cache(maxsize=128)
 def query_code_bison(ctx, temp=0.5, max_tokens=2048):
-    client_options = {"api_endpoint": "us-central1-aiplatform.googleapis.com"}
 
-    client = aiplatform.gapic.PredictionServiceClient(
-        client_options=client_options
-    )
-    instance_dict = {
-        "prefix": ctx
-    }
-    instance = json_format.ParseDict(instance_dict, Value())
-    instances = [instance]
-    parameters_dict = {
+    parameters = {
         "temperature": temp,
-        "maxOutputTokens": max_tokens,
+        "max_output_tokens": max_tokens,
     }
-    parameters = json_format.ParseDict(parameters_dict, Value())
-    response = client.predict(
-        endpoint=f"projects/{cfg['PROJECT_ID']}/locations/us-central1/publishers/google/models/code-bison@001", 
-        instances=instances, 
-        parameters=parameters
+    response = model.predict(
+        prefix = ctx,
+        **parameters
     )
-    predictions = response.predictions
+    # TODO: check and handle ['safetyAttributes']['blocked'] when implemented
+    if len(response.text) == 0:
+        raise Exception("Empty response from vertexai")
 
-    for prediction in predictions: 
-        if prediction.get("safetyAttributes")['blocked']:
-            logging.info("safetyAttributes blocked")
-            raise Exception("Something went wrong with content of the request or reply. (try refreshing or changing the input)")
+    res = extract_code(response.text)
+    if res == None:
+        # Raising exception without returning avoid caching bad response
+        raise Exception("Regex parsing error.")
 
-        res = extract_code(prediction.get("content"))
-        if res == None:
-            raise Exception('Something went wrong parsing the reply')
-        return res
+    return res
+
 
 app = Flask(__name__)
 
@@ -72,8 +63,16 @@ def generate_landingpage(company_name, product, core_value):
     product = product.replace('_', ' ')
     core_value = core_value.replace('_', ' ')
     context = open('prompts/design_landingpage').read().format(**locals())
-    logging.info('context: ', context)
-    return query_code_bison(context, temp=0.8)
+    logging.info('context: ' + context)
+    try:
+        res = query_code_bison(context, temp=0.8, max_tokens=2048) 
+        logging.info(query_code_bison.cache_info())
+        return res
+    except Exception as e:
+        logging.error(e)
+        if e.args[0] == "Empty response from vertexai":
+            return "Error (likely safety filter). Try again a few times. You can also try changing the parameters."
+        return "Error: " + str(e)
 
 if __name__ == '__main__':
     app.run(debug=True)
