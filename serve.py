@@ -55,7 +55,21 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return 'Usage: /company_name/product/core_value (use underscores as spaces) (generating might take 10s+.)'
+    return """
+<html>
+<body>
+<h3>Usage: wdiia.popovine.com/{company_name}/{product}/{core_value}</h3>
+<p>A landing page for a company named {company_name} that sells {product} and has {core_values} will be generated for you using code-bison LLM.</p>
+<p>You can use underscores as spaces.</p>
+<p>Generating might take 15s+, if you get an error try refreshing few times. Some replies might be cached.</p>
+<p>Some examples:</p>
+<p><a href="/Shaboozy/coffee/space_exploration">wdiia.popovine.com/Shaboozy/coffee/space_exploration</a></p>
+<p><a href="/Cucumber_Bob_Inc/industrial_cleaning_equipment/competitive_jazz_flute">wdiia.popovine.com/Cucumber_Bob_Inc/industrial_cleaning_equipment/competitive_jazz_flute</a></p>
+<p>You get the idea.</p>
+<p>Source: <a href="https://github.com/antonpp/wdiia" target="_blank">github.com/antonpp/wdiia</a></p>
+</body>
+</html>
+""" 
 
 @app.route('/<string:company_name>/<string:product>/<string:core_value>')
 def generate_landingpage(company_name, product, core_value):
@@ -65,9 +79,10 @@ def generate_landingpage(company_name, product, core_value):
     context = open('prompts/design_landingpage').read().format(**locals())
     logging.info('context: ' + context)
     try:
-        res = query_code_bison(context, temp=0.8, max_tokens=2048) 
+        res = query_code_bison(context, temp=0.5, max_tokens=2048) 
         logging.info(query_code_bison.cache_info())
-        return res
+        info_banner = """what is this? >> <a target="_blank" href="https://github.com/antonpp/wdiia">github.com/antonpp/wdiia</a> <br/>""" 
+        return info_banner + res
     except Exception as e:
         logging.error(e)
         if e.args[0] == "Empty response from vertexai":
