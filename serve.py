@@ -1,17 +1,17 @@
-import re, logging
+import os, re, logging
 import vertexai
 
 from functools import lru_cache
 
 from flask import Flask
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 from vertexai.preview.language_models import CodeGenerationModel
 
 
 logging.basicConfig(level=logging.INFO)
+load_dotenv()
 
-cfg = dotenv_values('.env')
-vertexai.init(project=cfg['PROJECT_ID'], location="us-central1")
+vertexai.init(project=os.getenv('PROJECT_ID'), location="us-central1")
 model = CodeGenerationModel.from_pretrained("code-bison@001")
 
 def extract_code(markdown_text):
