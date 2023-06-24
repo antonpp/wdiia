@@ -61,7 +61,7 @@ def index():
 <h3>Usage: wdiia.popovine.com/{company_name}/{product}/{core_value}</h3>
 <p>A landing page for a company named {company_name} that sells {product} and has {core_values} will be generated for you using code-bison LLM.</p>
 <p>You can use underscores as spaces.</p>
-<p>Generating might take 15s+, if you get an error try refreshing few times. Some replies might be cached.</p>
+<p>Generating might take 15s+, if you get an error try refreshing few times.</p>
 <p>Some examples:</p>
 <p><a href="/Shaboozy/coffee/space_exploration">wdiia.popovine.com/Shaboozy/coffee/space_exploration</a></p>
 <p><a href="/Cucumber_Bob_Inc/industrial_cleaning_equipment/competitive_jazz_flute">wdiia.popovine.com/Cucumber_Bob_Inc/industrial_cleaning_equipment/competitive_jazz_flute</a></p>
