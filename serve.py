@@ -3,7 +3,7 @@ import vertexai
 
 from functools import lru_cache
 
-from flask import Flask
+from flask import Flask, render_template, request
 from dotenv import load_dotenv
 from vertexai.preview.language_models import CodeGenerationModel
 
@@ -55,27 +55,13 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return """
-<html>
-<body>
-<h3>Usage: wdiia.popovine.com/{company_name}/{product}/{core_value}</h3>
-<p>A landing page for a company named {company_name} that sells {product} and has {core_values} will be generated for you using code-bison LLM.</p>
-<p>You can use underscores as spaces.</p>
-<p>Generating might take 15s+, if you get an error try refreshing few times.</p>
-<p>Some examples:</p>
-<p><a href="/Shaboozy/coffee/space_exploration">wdiia.popovine.com/Shaboozy/coffee/space_exploration</a></p>
-<p><a href="/Cucumber_Bob_Inc/industrial_cleaning_equipment/competitive_jazz_flute">wdiia.popovine.com/Cucumber_Bob_Inc/industrial_cleaning_equipment/competitive_jazz_flute</a></p>
-<p>You get the idea.</p>
-<p>Source: <a href="https://github.com/antonpp/wdiia" target="_blank">github.com/antonpp/wdiia</a></p>
-</body>
-</html>
-""" 
-
-@app.route('/<string:company_name>/<string:product>/<string:core_value>')
-def generate_landingpage(company_name, product, core_value):
-    company_name = company_name.replace('_', ' ')
-    product = product.replace('_', ' ')
-    core_value = core_value.replace('_', ' ')
+    return render_template('./index.html')
+    
+@app.route('/generate')
+def generate_landingpage():
+    company_name = request.args.get('company_name')
+    product = request.args.get('product')
+    core_value = request.args.get('core_value')
     context = open('prompts/design_landingpage').read().format(**locals())
     logging.info('context: ' + context)
     try:
